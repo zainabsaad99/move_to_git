@@ -1,0 +1,14 @@
+{
+    "Validation Loss": 0.12244596697276619,
+    "Params": {
+        "d_model_num_heads": {
+            "d_model": 256,
+            "num_heads": 4
+        },
+        "num_layers": 3,
+        "d_ff": 1024,
+        "dropout": 0.19227956996136614,
+        "learning_rate": 0.0003871508280743543,
+        "weight_decay": 0.0003503973709750664
+    }
+}

@@ -1,0 +1,23 @@
+Connect to VPN
+
+open terminal then write:
+ssh zas31@octopus.aub.edu.lb
+
+
+open another terminal:
+directory where the folder save in your machine to copy it to hpc 
+rsync -PrlHvtpog /home/vboxuser/Downloads/Transformer zas31@octopus.aub.edu.lb:~/
+rsync -PrlHvtpog /home/vboxuser/Downloads/test zas31@octopus.aub.edu.lb:~/
+rsync -PrlHvtpog /home/vboxuser/Downloads/Rail_fence_transformer zas31@octopus.aub.edu.lb:~/
+In HPC terminal 
+to see all documents
+$ ls 
+cd to the file
+
+if bat file made by windows first write:
+$ dos2unix run_transformer.bat
+$ sbatch run_transformer.bat
+$ dos2unix transfromer_rail.bat
+$ sbatch transfromer_rail.sh
+to see run 
+$ sq -u user

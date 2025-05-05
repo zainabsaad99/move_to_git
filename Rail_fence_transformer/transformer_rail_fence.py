@@ -1,4 +1,3 @@
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -7,9 +6,7 @@ import math
 import copy
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from collections import Counter
 import string
-from openpyxl import load_workbook
 
 # Data Preparation
 def load_data(file_path):
@@ -17,7 +14,7 @@ def load_data(file_path):
     # Extract input-output pairs
     inputs = df['Input'].tolist()
     outputs = df['Output'].tolist()
-    return inputs, outputs
+    return inputs, Outputs
 
 # Tokenization and Vocabulary
 class Vocabulary:
@@ -242,7 +239,7 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
             output = model(src, tgt[:, :-1])
 
             loss = criterion(output.contiguous().view(-1, len(vocab)),
-                             tgt[:, 1:].contiguous().view(-1))
+                           tgt[:, 1:].contiguous().view(-1))
             loss.backward()
             optimizer.step()
 
@@ -260,29 +257,23 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
         # Save best model
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            torch.save(model.state_dict(), 'best_model.pth')  # Save the best model
-    def evaluate_model(model, data_loader, criterion, device):
-        model.eval()
-        total_loss = 0
-
-        with torch.no_grad():
-            for src, tgt in data_loader:
-                src, tgt = src.to(device), tgt.to(device)
-                output = model(src, tgt[:, :-1])
-                loss = criterion(output.contiguous().view(-1, len(vocab)),
-                tgt[:, 1:].contiguous().view(-1))
-                total_loss += loss.item()
-
-        return total_loss / len(data_loader)
-
+            torch.save(model.state_dict(), 'best_parameter.pth')
 
     return model
 
-# Function to load the best saved model for inference
-def load_best_model(model, path='best_model.pth'):
-    model.load_state_dict(torch.load(path))
-    model.eval()  # Set to evaluation mode
-    return model
+def evaluate_model(model, data_loader, criterion, device):
+    model.eval()
+    total_loss = 0
+
+    with torch.no_grad():
+        for src, tgt in data_loader:
+            src, tgt = src.to(device), tgt.to(device)
+            output = model(src, tgt[:, :-1])
+            loss = criterion(output.contiguous().view(-1, len(vocab)),
+                           tgt[:, 1:].contiguous().view(-1))
+            total_loss += loss.item()
+
+    return total_loss / len(data_loader)
 
 # Inference Function
 def decrypt_text(model, text, vocab, max_length, device):
@@ -310,7 +301,7 @@ def decrypt_text(model, text, vocab, max_length, device):
 # Main Execution
 if __name__ == "__main__":
     # Load and prepare data
-    inputs, outputs = load_data('train_augmented.xlsx')
+    inputs, outputs = load_data('train_augmented.csv')
 
     # Create vocabulary
     vocab = Vocabulary()
@@ -321,12 +312,12 @@ if __name__ == "__main__":
     )
 
     # Create datasets
-    max_length = 100  # Adjust based on your data
+    max_length = 512  # Adjust based on your data
     train_dataset = CipherDataset(train_inputs, train_outputs, vocab, max_length)
     val_dataset = CipherDataset(val_inputs, val_outputs, vocab, max_length)
 
     # Create data loaders
-    batch_size = 64  # As per your updated value
+    batch_size = 64
     train_loader = data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = data.DataLoader(val_dataset, batch_size=batch_size)
 
@@ -335,38 +326,19 @@ if __name__ == "__main__":
     model = Transformer(
         src_vocab_size=len(vocab),
         tgt_vocab_size=len(vocab),
-        d_model=256,  # As per your updated value
-        num_heads=8,  # As per your updated value
-        num_layers=6,  # As per your updated value
-        d_ff=512,     # As per your updated value
+        d_model=256,
+        num_heads=8,
+        num_layers=6,
+        d_ff=512,
         max_seq_length=max_length,
-        dropout=0.20284372216007185  # As per your updated value
+        dropout=0.20284372216007185
     ).to(device)
-
     # Loss and optimizer
     criterion = nn.CrossEntropyLoss(ignore_index=vocab.pad_token)
-    optimizer = optim.Adam(model.parameters(), lr=0.0003156554523354843, betas=(0.9, 0.98), eps=1e-9)  # As per your updated value
+    optimizer = optim.Adam(model.parameters(), lr=0.0003156554523354843, betas=(0.9, 0.98), eps=1e-9)
 
     # Train the model
-    num_epochs = 5
+    num_epochs = 30
     trained_model = train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs, device)
 
-    # After training, save the best model and load it for testing
-    trained_model = load_best_model(trained_model)  # Load the best saved model
 
-    # Testing the model using the test data set
-    file_path = 'test_augmented.xlsx'
-    workbook = load_workbook(filename=file_path)
-    sheet = workbook['Sheet1']  # or whatever your sheet name is
-
-    # Iterate through each row starting from row 2 (assuming row 1 is headers)
-    for row in sheet.iter_rows(min_row=2, max_col=3):  # Only process first 3 columns
-        input_text = row[0].value  # First column (A)
-        if input_text:  # Only process if there's text in the input column
-            decrypted_text = decrypt_text(trained_model, input_text, vocab, max_length, device)
-            print(f"input: {input_text}, dec: {decrypted_text}")
-            row[2].value = decrypted_text  # Write to third column (C)
-
-    # Save the modified workbook
-    workbook.save(filename='result.xlsx')
-    print("Decryption completed and results saved to Excel file.")
